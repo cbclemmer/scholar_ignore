@@ -3,6 +3,61 @@ document.addEventListener('DOMContentLoaded', () => {
   const projectList = document.getElementById('project-list');
   const newProjectInput = document.getElementById('new-project');
   const addProjectButton = document.getElementById('add-project');
+  const paperListContainer = document.getElementById('paper-list-container');
+  const paperList = document.getElementById('paper-list');
+
+  // Function to render the paper list for the selected project
+  function renderPaperList(projectName) {
+    paperList.innerHTML = '';
+    browser.storage.local.get('projectPapers').then((result) => {
+      const projectPapers = result.projectPapers || {};
+      const papers = projectPapers[projectName] || [];
+      papers.sort((a, b) => new Date(a.date) < new Date(b.date));
+
+      if (papers.length > 0) {
+        papers.forEach((paper) => {
+          const li = document.createElement('li');
+          const paperTitle = document.createElement('span');
+          paperTitle.textContent = paper.title;
+
+          const dateText = document.createElement('span')
+          dateText.textContent = "Date Added: " + (new Date(paper.date)).toISOString()
+
+          const removeButton = document.createElement('button');
+          removeButton.textContent = 'Remove';
+          removeButton.addEventListener('click', () => {
+            removePaperFromList(projectName, paper.url);
+          });
+
+          li.appendChild(paperTitle);
+          li.appendChild(document.createElement('br'))
+          li.appendChild(dateText)
+          li.appendChild(document.createElement('br'))
+          li.appendChild(removeButton);
+          paperList.appendChild(li);
+        });
+        paperListContainer.style.display = 'block';
+      } else {
+        paperListContainer.style.display = 'none';
+      }
+    });
+  }
+
+  // Function to remove a paper from the ignore list
+  function removePaperFromList(projectName, paperURL) {
+    browser.storage.local.get('projectPapers').then((result) => {
+      const projectPapers = result.projectPapers || {};
+      if (projectPapers[projectName]) {
+        const paperIndex = projectPapers[projectName].findIndex(paper => paper.url === paperURL);
+        if (paperIndex > -1) {
+          projectPapers[projectName].splice(paperIndex, 1);
+          browser.storage.local.set({ projectPapers: projectPapers }).then(() => {
+            renderPaperList(projectName);
+          });
+        }
+      }
+    });
+  }
 
   // Function to render the project list
   function renderProjects() {
@@ -14,8 +69,10 @@ document.addEventListener('DOMContentLoaded', () => {
       // Update the current project display
       if (currentProject) {
         currentProjectElement.textContent = `Current project: ${currentProject}`;
+        renderPaperList(currentProject)
       } else {
         currentProjectElement.textContent = 'No project selected';
+        paperListContainer.style.display = 'none'
       }
 
       document.querySelectorAll('li').forEach((line) => {

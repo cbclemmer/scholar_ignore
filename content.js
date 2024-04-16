@@ -1,20 +1,26 @@
 // Function to add a paper to the list
-function addPaperToList(url, el) {
+function addPaperToList(url, title, el) {
   browser.storage.local.get(['currentProject', 'projectPapers']).then((result) => {
     const currentProject = result.currentProject;
     const projectPapers = result.projectPapers || {};
-    if (currentProject) {
-      if (!projectPapers[currentProject]) {
-        projectPapers[currentProject] = [];
-      }
-      if (!projectPapers[currentProject].includes(url)) {
-        projectPapers[currentProject].push(url);
-        browser.storage.local.set({ projectPapers: projectPapers });
-      }
-      el.remove();
-    } else {
+    if (!currentProject) {
       alert('No project selected')
+      return
     }
+    
+    if (!projectPapers[currentProject]) {
+      projectPapers[currentProject] = [];
+    }
+
+    if (!projectPapers[currentProject].some(paper => paper.url === url)) {
+      projectPapers[currentProject].push({
+        "url": url,
+        "title": title,
+        "date": (new Date()).toISOString()
+      });
+      browser.storage.local.set({ projectPapers: projectPapers });
+    }
+    el.remove();
   });
 }
 
@@ -24,6 +30,7 @@ function hideMatchingResults() {
     const currentProject = result.currentProject;
     const projectPapers = result.projectPapers || {};
     const papers = projectPapers[currentProject] || [];
+    const paperURLs = papers.map(paper => paper.url);
     let searchResults = document.querySelectorAll('.gs_r');
     searchResults.forEach((result) => {
       const a = result.querySelector('.gs_rt a')
@@ -34,7 +41,7 @@ function hideMatchingResults() {
       if (url.indexOf('?') !== -1) {
         url = url.split('?')[0]
       }
-      if (papers.includes(url)) {
+      if (paperURLs.includes(url)) {
         result.style.display = 'none';
       }
     });
@@ -48,8 +55,10 @@ function addButtons() {
     let button = document.createElement('button');
     button.textContent = 'Add to List';
     button.addEventListener('click', () => {
-      let url = result.querySelector('.gs_rt a').href;
-      addPaperToList(url, result);
+      const a = result.querySelector('.gs_rt a')
+      let url = a.href;
+      const title = a.innerHTML
+      addPaperToList(url, title, result);
     });
     result.appendChild(button);
   });
