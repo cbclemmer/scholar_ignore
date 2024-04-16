@@ -1,0 +1,23 @@
+{
+  "manifest_version": 2,
+  "name": "Scholar Ignore",
+  "version": "1.0",
+
+  "permissions": [
+    "storage"
+  ],
+
+  "browser_action": {
+    "default_popup": "popup.html"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["https://scholar.google.com/*"],
+      "js": ["content.js"]
+    }
+  ],
+  "icons": {
+    "48": "icon.ico"
+  } 
+}
